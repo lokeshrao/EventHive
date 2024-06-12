@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Button, Image, TextInput, ScrollView } from 'react-native';
-import getDbConnection from '../database/mydb'; // Import the Database module
+import { StyleSheet, Text, View, Button, Image, TextInput, ScrollView, FlatList,TouchableOpacity } from 'react-native';
+import { getAllEvents } from '../database/mydb'; // Import the Database module
 import { fetchEventAndUsersData } from '../utils/eventApi.js';  /// Adjust the path according to your file structure
 import StorageHelper from '../utils/storageHelper';  // Adjust the path to your storageHelper.js file
+import { useNavigation } from '@react-navigation/native';
 
 
 export default function App() {
@@ -11,6 +12,8 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [token, setToken] = useState('');
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const navigation = useNavigation();
+
 
   useEffect(() => {
     const checkToken = async () => {
@@ -33,20 +36,16 @@ export default function App() {
     }
 
     try {
-      // Fetch event data from the API
-      const eventData = await fetchEventAndUsersData(eventName,token);
+      const eventData = await fetchEventAndUsersData(eventName, token);
       console.log('eventDara', eventData);
 
       if (!eventData) {
         ToastAndroid.show('No event data found', ToastAndroid.SHORT);
         return;
       }
-
-      // Save event to the database
-      await getDbConnection.executeQuery('INSERT INTO events (name, details) VALUES (?, ?)', [eventName, JSON.stringify(eventData)]);
       setEventName('');
       setIsAddingEvent(false);
-      fetchEvents(); // Fetch the updated events list
+      fetchEvents();
       ToastAndroid.show('Event added successfully', ToastAndroid.SHORT);
     } catch (error) {
       console.error('Failed to add event', error);
@@ -54,22 +53,27 @@ export default function App() {
     }
   };
 
+
   const fetchEvents = async () => {
     try {
-      const results = await getDbConnection.executeQuery('SELECT * FROM events');
-      if (results) {
-        const rows = results.rows;
-        const eventsList = [];
-        // for (let i = 0; i < rows.length; i++) {
-        //   eventsList.push(rows.item(i));
-        // }
-        // setEvents(eventsList);
+      const results = Array.from(await getAllEvents());
+
+      console.log('Fetched events:', typeof results);
+      console.log('Fetched events:', JSON.stringify(results.length));
+
+
+      if (results && results.length > 0) {
+        setEvents(results);
       } else {
         console.warn('No events found in the database');
       }
     } catch (error) {
       console.error('Failed to fetch events', error);
     }
+  };
+
+  const handleEventPress = (event) => {
+    navigation.navigate('EventUsers', { eventData: event });
   };
 
 
@@ -85,9 +89,21 @@ export default function App() {
               <Button title="Add event" onPress={() => setIsAddingEvent(true)} />
             </>
           ) : (
-            events.map((event) => (
-              <Text key={event.id} style={styles.eventItem}>{event.name}</Text>
-            ))
+            <FlatList
+              data={events}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => handleEventPress(item)}>
+                  <View style={styles.eventItem}>
+                    <Text>{item.name}</Text>
+                    <Text>Description: {item.description}</Text>
+                    <Text>Type: {item.type}</Text>
+                    <Text>Start Date: {item.startDate}</Text>
+                    <Text>End Date: {item.endDate}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
           )}
         </ScrollView>
       </View>

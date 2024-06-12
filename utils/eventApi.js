@@ -1,4 +1,6 @@
 import apiClient from './apiClient';
+import { saveEventAndUser } from '../database/mydb'; // Import the Database module
+
 
 export const fetchEventAndUsersData = async (eventId, token) => {
     const eventEndpoint = `https://435-tdp-284.mktorest.com/rest/asset/v1/program/${eventId}.json`;
@@ -12,47 +14,45 @@ export const fetchEventAndUsersData = async (eventId, token) => {
   
       const eventData = eventResponse.data.result[0];
       const usersData = usersResponse.data.result;
-      console.log("event data ",eventData)
-      console.log("user data ",usersData)
+      console.log(eventData,usersData)
 
+      await saveEventAndUser(eventData,usersData,eventId)
+
+      const event = {
+        id: eventData.id ?? '',
+        name: eventData.name ?? '',
+        description: eventData.description ?? '',
+        createdAt: eventData.createdAt ?? '',
+        updatedAt: eventData.updatedAt ?? '',
+        url: eventData.url ?? '',
+        type: eventData.type ?? '',
+        channel: eventData.channel ?? '',
+        startDate: eventData.startDate ?? '',
+        endDate: eventData.endDate ?? '',
+        users: []
+      };
   
-      // Store event data in the database
-      await Database.executeQuery(
-        'INSERT INTO events (id, name, description, createdAt, updatedAt, url, type, channel, startDate, endDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          eventData.id,
-          eventData.name,
-          eventData.description,
-          eventData.createdAt,
-          eventData.updatedAt,
-          eventData.url,
-          eventData.type,
-          eventData.channel,
-          eventData.startDate,
-          eventData.endDate
-        ]
-      );
+      event.users = usersData.map(user => ({
+        id: user.id ?? '',
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        email: user.email ?? '',
+        createdAt: user.createdAt ?? '',
+        updatedAt: user.updatedAt ?? '',
+        membership: {
+          acquiredBy: user.membership?.acquiredBy ?? false,
+          id: user.membership?.id ?? '',
+          isExhausted: user.membership?.isExhausted ?? false,
+          membershipDate: user.membership?.membershipDate ?? '',
+          progressionStatus: user.membership?.progressionStatus ?? '',
+          progressionStatusType: user.membership?.progressionStatusType ?? '',
+          reachedSuccess: user.membership?.reachedSuccess ?? false,
+          updatedAt: user.membership?.updatedAt ?? ''
+        }
+      }));
   
-      // Store users data in the database
-      for (const user of usersData) {
-        await Database.executeQuery(
-          'INSERT INTO users (event_id, user_id, firstName, lastName, email, updatedAt, createdAt, progressionStatus, membershipDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            eventId,
-            user.id,
-            user.firstName,
-            user.lastName,
-            user.email,
-            user.updatedAt,
-            user.createdAt,
-            user.membership.progressionStatus,
-            user.membership.membershipDate
-          ]
-        );
-      }
-  
-      return { event: eventData, users: usersData };
-    } catch (error) {
+      return event;
+      } catch (error) {
       console.error('Failed to fetch event and users data:', error);
       throw error;
     }

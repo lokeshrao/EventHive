@@ -15,7 +15,6 @@ export default function Setting() {
       const storedToken = await StorageHelper.getItem('token');
       if (storedToken) {
         setToken(storedToken);
-        setIsButtonDisabled(true);
         ToastAndroid.show('Token already exists', ToastAndroid.SHORT);
       }
     };
