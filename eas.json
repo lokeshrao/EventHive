@@ -3,8 +3,8 @@
     "development": {
       "distribution": "internal",
       "ios": {
-        "image": "latest",
-        "buildType": "simulator"
+        "image": "latest"
+      
       },
       "android": {
         "image": "latest"
