@@ -16,6 +16,8 @@
       "bundleIdentifier": "com.whizzarc.eventhive"
 
     },
+    "owner": "poojadassani",
+    
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/app_splash.png",
