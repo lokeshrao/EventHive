@@ -17,7 +17,7 @@ export const fetchEventAndUsersData = async (eventId, token) => {
       console.log(eventData,usersData)
 
       await saveEventAndUser(eventData,usersData,eventId)
-
+     //git ESA check
       const event = {
         id: eventData.id ?? '',
         name: eventData.name ?? '',
