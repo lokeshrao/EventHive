@@ -22,6 +22,18 @@
     },
     "web": {
       "favicon": "./assets/app_splash.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a30931da-68d3-47a4-9a43-a4a3bdfe5d1e"
+      }
+    },
+    "owner": "poojadassani",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a30931da-68d3-47a4-9a43-a4a3bdfe5d1e"
     }
   }
 }
