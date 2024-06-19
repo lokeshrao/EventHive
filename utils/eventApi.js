@@ -27,6 +27,7 @@ export const fetchEventAndUsersData = async (eventId, token) => {
         url: eventData.url ?? '',
         type: eventData.type ?? '',
         channel: eventData.channel ?? '',
+        workspace: eventData.workspace ?? '',
         startDate: eventData.startDate ?? '',
         endDate: eventData.endDate ?? '',
         users: []
@@ -37,6 +38,8 @@ export const fetchEventAndUsersData = async (eventId, token) => {
         firstName: user.firstName ?? '',
         lastName: user.lastName ?? '',
         email: user.email ?? '',
+        company: user.company ?? '',
+        phone: user.phone ?? '',
         createdAt: user.createdAt ?? '',
         updatedAt: user.updatedAt ?? '',
         membership: {

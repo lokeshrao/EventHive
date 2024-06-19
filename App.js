@@ -7,6 +7,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LoginScreen from './screens/Login';
 import Event from './screens/Event';
 import Setting from './screens/Setting';
+import DBExport from './screens/DBExport';
+
 import DatabaseExporter from './screens/DBExport';
 import EventUsers from './screens/EventUsers';
 
@@ -29,7 +31,7 @@ function TabNavigator() {
     <Tab.Navigator>
       <Tab.Screen name="Setting" component={Setting} options={{ tabBarLabel: 'Setting', headerShown: false }} />
       <Tab.Screen name="Events" component={EventsStack} options={{ headerShown: false }} />
-      <Tab.Screen name="Screen3" component={Screen3} options={{ tabBarLabel: 'Screen 3', headerShown: false }} />
+      <Tab.Screen name="Screen3" component={DBExport} options={{ tabBarLabel: 'Screen 3', headerShown: false }} />
     </Tab.Navigator>
   );
 }
