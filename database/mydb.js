@@ -33,6 +33,7 @@ const initializeDatabase = async () => {
         url TEXT,
         type TEXT,
         channel TEXT,
+        workspace TEXT,        
         startDate TEXT,
         endDate TEXT
       );
@@ -47,6 +48,8 @@ const initializeDatabase = async () => {
         firstName TEXT,
         lastName TEXT,
         email TEXT,
+        company TEXT,
+        phone TEXT,
         updatedAt TEXT,
         createdAt TEXT,
         progressionStatus TEXT,
@@ -71,6 +74,8 @@ export const getAllEvents = async () => {
         u.firstName, 
         u.lastName, 
         u.email, 
+        u.company, 
+        u.phone, 
         u.updatedAt AS userUpdatedAt, 
         u.createdAt AS userCreatedAt, 
         u.progressionStatus, 
@@ -95,6 +100,7 @@ export const getAllEvents = async () => {
           channel: row.channel,
           startDate: row.startDate,
           endDate: row.endDate,
+          workspace:row.workspace,
           users: [] 
         };
       }
@@ -105,6 +111,8 @@ export const getAllEvents = async () => {
           firstName: row.firstName,
           lastName: row.lastName,
           email: row.email,
+          company: row.company,
+          phone: row.phone,
           updatedAt: row.userUpdatedAt,
           createdAt: row.userCreatedAt,
           progressionStatus: row.progressionStatus,
@@ -124,8 +132,8 @@ export const saveEventAndUser = async (eventData, users, eventId) => {
 
   try {
     const eventQuery = `
-    INSERT OR REPLACE INTO events (id, name, description, createdAt, updatedAt, url, type, channel, startDate, endDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT OR REPLACE INTO events (id, name, description, createdAt, updatedAt, url, type, channel,workspace, startDate, endDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?)
   `;
 
     const eventValues = [
@@ -137,6 +145,7 @@ export const saveEventAndUser = async (eventData, users, eventId) => {
       eventData.url ?? '',
       eventData.type ?? '',
       eventData.channel ?? '',
+      eventData.workspace ?? '',
       eventData.startDate ?? '',
       eventData.endDate ?? ''
     ];
@@ -145,10 +154,10 @@ export const saveEventAndUser = async (eventData, users, eventId) => {
     await db.runAsync(eventQuery, eventValues);
     const numItems = users.length;
 
-const placeholders = Array(numItems).fill("(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+const placeholders = Array(numItems).fill("(?, ?, ?, ?, ?, ?,?,?, ?, ?, ?)").join(", ");
 
 const bulkInsertQuery = `
-  INSERT OR REPLACE INTO users (event_id, user_id, firstName, lastName, email, updatedAt, createdAt, progressionStatus, membershipDate)
+  INSERT OR REPLACE INTO users (event_id, user_id, firstName, lastName, email,company,phone, updatedAt, createdAt, progressionStatus, membershipDate)
   VALUES ${placeholders};
 `;
     const userValues = [];
@@ -159,6 +168,8 @@ const bulkInsertQuery = `
         userData.firstName ?? '',
         userData.lastName ?? '',
         userData.email ?? '',
+        userData.company ?? '',
+        userData.phone ?? '',
         userData.updatedAt ?? '',
         userData.createdAt ?? '',
         userData.membership.progressionStatus ?? '',

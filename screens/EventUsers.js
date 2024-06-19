@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Modal, TextInput, Button, Switch } from 'react-native';
+import { createOrUpdateUser } from '../utils/addEditUserApi';
+import { getToken } from '../utils/authApi';
+import StorageHelper from '../utils/storageHelper';  // Adjust the path to your storageHelper.js file
+
 
 export default function EventDetails({ route, navigation }) {
   const { eventData } = route.params;
   const users = eventData.users;
-
+  const [token, setToken] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -16,22 +20,84 @@ export default function EventDetails({ route, navigation }) {
     phone: '',
     marketingOptedIn: false,
   });
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleUserSelect = (user) => {
     setSelectedUser(user);
-    console.log("selectedJUser"  + JSON.stringify(user))
+    console.log("selectedUser" + JSON.stringify(user));
   };
+useEffect(() => {
+  const checkToken = async () => {
+    try {
+      const storedToken = await StorageHelper.getItem('token');
+      console.log("token: ", storedToken);
+      if (storedToken) {
+        setToken(storedToken);
+        ToastAndroid.show('Token already exists', ToastAndroid.SHORT);
+      }
+    } catch (error) {
+      console.error('Failed to retrieve token:', error);
+    }
+  };
+
+  checkToken();
+
+}, []);
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible);
   };
 
-  const handleAddUser = () => {
-    // Add logic to add a new user to the list of users
-    // For example:
-    // users.push(newUser);
-    // You may need to update your state or dispatch an action here
-    // Reset newUser state and hide the modal
+  const handleAddUser = async () => {
+    try {
+      const response = await createOrUpdateUser(newUser, token, eventData.workspace);
+      console.log(response)
+      if (response && response.success) {
+        if (isEditing) {
+          // Update user logic
+          const userIndex = users.findIndex(user => user.email === selectedUser.email);
+          if (userIndex !== -1) {
+            users[userIndex] = newUser;
+          }
+        } else {
+          // Add user logic
+          users.push(newUser);
+        }
+
+        setNewUser({
+          firstName: '',
+          lastName: '',
+          title: '',
+          organization: '',
+          email: '',
+          phone: '',
+          marketingOptedIn: false,
+        });
+        setIsEditing(false);
+        toggleModal();
+      } else {
+        console.log("Error", "Failed to add or update the user. Please try again.");
+      }
+    } catch (error) {
+      console.error('Failed to add or update user:', error);
+      console.log("Error", "Failed to add or update the user. Please try again.");
+    }
+  };
+
+  const handleEditUser = (user) => {
+    setNewUser({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      title: user.title,
+      organization: user.organization,
+      email: user.email,
+      phone: user.phone,
+      marketingOptedIn: user.marketingOptedIn,
+    });
+    setIsEditing(true);
+    toggleModal();
+  };
+  const addUserClicked = (user) => {
     setNewUser({
       firstName: '',
       lastName: '',
@@ -41,25 +107,8 @@ export default function EventDetails({ route, navigation }) {
       phone: '',
       marketingOptedIn: false,
     });
+    setIsEditing(false);
     toggleModal();
-  };
-
-  const handleEditUser = (selectedUser) => {
-    // setNewUser({
-    //   firstName: selectedUser.firstName??'',
-    //   lastName: selectedUser.lastName??'',
-    //   title: selectedUser.title??'',
-    //   organization: selectedUser.organization??'',
-    //   email:selectedUser.email??'',
-    //   phone: selectedUser.phone??'',
-    //   marketingOptedIn: false,
-    // });
-    // toggleModal();
-    // // Add logic to edit the selected user
-    // // For example:
-    // // Implement a navigation to a separate edit user screen passing selectedUser as parameter
-    // // navigation.navigate('EditUser', { user: selectedUser });
-    // // or update the user directly in the state if it's managed here
   };
 
   const renderUserItem = ({ item }) => (
@@ -73,7 +122,7 @@ export default function EventDetails({ route, navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.leftPanel}>
-        <TouchableOpacity onPress={()=>navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.eventName}>{eventData.name}</Text>
         </TouchableOpacity>
         <FlatList
@@ -81,7 +130,7 @@ export default function EventDetails({ route, navigation }) {
           keyExtractor={(item, index) => index.toString()}
           renderItem={renderUserItem}
         />
-        <TouchableOpacity onPress={toggleModal} style={styles.addButton}>
+        <TouchableOpacity onPress={addUserClicked} style={styles.addButton}>
           <Text style={styles.addButtonText}>Add User</Text>
         </TouchableOpacity>
       </View>
@@ -93,7 +142,7 @@ export default function EventDetails({ route, navigation }) {
             <Text>First Name: {selectedUser.firstName}</Text>
             <Text>Last Name: {selectedUser.lastName}</Text>
             <Text>Email: {selectedUser.email}</Text>
-            <TouchableOpacity onPress={handleEditUser(selectedUser)} style={styles.editButton}>
+            <TouchableOpacity onPress={() => handleEditUser(selectedUser)} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit User</Text>
             </TouchableOpacity>
           </>
@@ -103,52 +152,52 @@ export default function EventDetails({ route, navigation }) {
       <Modal visible={isModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New User</Text>
+            <Text style={styles.modalTitle}>{isEditing ? 'Edit User' : 'Add New User'}</Text>
             <TextInput
               style={styles.input}
               placeholder="First Name"
               value={newUser.firstName}
-              onChangeText={(text) => setNewUser({...newUser, firstName: text})}
+              onChangeText={(text) => setNewUser({ ...newUser, firstName: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Last Name"
               value={newUser.lastName}
-              onChangeText={(text) => setNewUser({...newUser, lastName: text})}
+              onChangeText={(text) => setNewUser({ ...newUser, lastName: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Title"
               value={newUser.title}
-              onChangeText={(text) => setNewUser({...newUser, title: text})}
+              onChangeText={(text) => setNewUser({ ...newUser, title: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Organization"
               value={newUser.organization}
-              onChangeText={(text) => setNewUser({...newUser, organization: text})}
+              onChangeText={(text) => setNewUser({ ...newUser, organization: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Email"
               value={newUser.email}
-              onChangeText={(text) => setNewUser({...newUser, email: text})}
+              onChangeText={(text) => setNewUser({ ...newUser, email: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Phone"
               value={newUser.phone}
-              onChangeText={(text) => setNewUser({...newUser, phone: text})}
+              onChangeText={(text) => setNewUser({ ...newUser, phone: text })}
             />
             <View style={styles.switchContainer}>
               <Text>Marketing Opted In</Text>
               <Switch
                 value={newUser.marketingOptedIn}
-                onValueChange={(value) => setNewUser({...newUser, marketingOptedIn: value})}
+                onValueChange={(value) => setNewUser({ ...newUser, marketingOptedIn: value })}
               />
             </View>
             <View style={styles.modalButtonContainer}>
-              <Button title="Add User" onPress={handleAddUser} />
+              <Button title={isEditing ? 'Update User' : 'Add User'} onPress={handleAddUser} />
               <Button title="Cancel" onPress={toggleModal} />
             </View>
           </View>
