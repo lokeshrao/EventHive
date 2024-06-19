@@ -12,10 +12,15 @@ export default function Setting() {
 
   useEffect(() => {
     const checkToken = async () => {
-      const storedToken = await StorageHelper.getItem('token');
-      if (storedToken) {
-        setToken(storedToken);
-        ToastAndroid.show('Token already exists', ToastAndroid.SHORT);
+      ToastAndroid.show('Checking token ', ToastAndroid.SHORT);
+      const isTokenValid = await StorageHelper.isTokenValid();
+      if (isTokenValid) {
+        const token = await StorageHelper.getItem("token");
+        setToken(token);
+        ToastAndroid.show('Token already exists , and valid', ToastAndroid.SHORT);
+      }
+      else{
+        ToastAndroid.show('Session is expired please login again', ToastAndroid.SHORT);
       }
     };
     checkToken();
@@ -33,9 +38,12 @@ export default function Setting() {
         throw new Error('Invalid response from server');
       }
       const { access_token } = tokenData;
+      const { expires_in } = tokenData;
+      const expiryTime = Date.now() + expires_in * 1000;
       await StorageHelper.saveItem('token', access_token);
+      await StorageHelper.saveItem('expiryTime', expiryTime.toString());
       setToken(access_token);
-      setIsButtonDisabled(true);
+      // setIsButtonDisabled(true);
       ToastAndroid.show('Connected successfully', ToastAndroid.SHORT);
     } catch (error) {
       console.error('Failed to connect', error);

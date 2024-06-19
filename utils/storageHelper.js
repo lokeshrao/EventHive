@@ -33,7 +33,21 @@ class StorageHelper {
     } catch (error) {
       console.error('Failed to clear storage', error);
     }
-  }
+  }  
 }
+export const isTokenValid = async () => {
+  try {
+    const token = await StorageHelper.getItem('token');
+    const expiryTime = await StorageHelper.getItem('expiryTime');
+    if (token && expiryTime) {
+      const currentTime = Date.now();
+      return currentTime < parseInt(expiryTime, 10);
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking token validity', error);
+    return false;
+  }
+};
 
 export default StorageHelper;
