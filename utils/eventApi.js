@@ -1,5 +1,5 @@
+import mydb from '../database/mydb';
 import apiClient from './apiClient';
-import { saveEventAndUser } from '../database/mydb'; // Import the Database module
 
 
 export const fetchEventAndUsersData = async (eventId, token) => {
@@ -9,14 +9,16 @@ export const fetchEventAndUsersData = async (eventId, token) => {
     try {
       const [eventResponse, usersResponse] = await Promise.all([
         apiClient.get(eventEndpoint, { params: { access_token: token } }),
-        apiClient.get(usersEndpoint, { params: { access_token: token } })
+        apiClient.get(usersEndpoint, { params: { access_token: token,fields:'FirstName,LastName,Email,Company,PostalCode,Phone,Country,Unsubscribed' } })
       ]);
   
       const eventData = eventResponse.data.result[0];
       const usersData = usersResponse.data.result;
-      console.log(eventData,usersData)
+      console.log("event Data" +JSON.stringify(eventData))
+      console.log("user Data" +JSON.stringify(usersData))
 
-      await saveEventAndUser(eventData,usersData,eventId)
+
+      await mydb.saveEventAndUser(eventData,usersData,eventId)
      //git ESA check
       const event = {
         id: eventData.id ?? '',

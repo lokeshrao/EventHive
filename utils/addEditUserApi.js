@@ -6,10 +6,19 @@ export const createOrUpdateUser = async (user, token,partitionName) => {
   const endpoint = `${API_BASE_URL}/leads.json?access_token=${token}`;
   const payload = {
     action: "createOrUpdate",
-    partitionName: partitionName,
+    partitionName: "EMEA",
     lookupField: "email",
-    input: [user]
+    input: [{
+      firstName: user.firstName,
+      lastName: user.lastName,
+      title: user.title,
+      company: user.organization,  
+      email: user.email,
+      phone: user.phone,
+      unsubscribed: !user.marketingOptedIn  
+    }]
   };
+  console.log("user Data" +JSON.stringify(user))
 
   try {
     const response = await apiClient.post(endpoint, payload);

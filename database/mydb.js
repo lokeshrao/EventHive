@@ -1,5 +1,4 @@
 import * as SQLite from 'expo-sqlite';
-import { LogBox } from 'react-native';
 
 let dbInstance = null;
 
@@ -14,7 +13,7 @@ const getDbConnection = async () => {
     console.log('Database opened');
     return dbInstance;
   } catch (error) {
-    console.error('Failed to opennnnn database', error);
+    console.error('Failed to open database', error);
     throw error;
   }
 };
@@ -52,6 +51,7 @@ const initializeDatabase = async () => {
         phone TEXT,
         updatedAt TEXT,
         createdAt TEXT,
+        unsubscribed INTEGER DEFAULT 0,
         progressionStatus TEXT,
         membershipDate TEXT,
         FOREIGN KEY (event_id) REFERENCES events(id)
@@ -63,14 +63,15 @@ const initializeDatabase = async () => {
     throw error;
   }
 };
-export const getAllEvents = async () => {
+
+const getAllEvents = async () => {
   try {
     const db = await getDbConnection();
 
     const sql = `
       SELECT 
         e.*, 
-        u.id AS user_id, 
+        u.user_id AS user_id, 
         u.firstName, 
         u.lastName, 
         u.email, 
@@ -79,6 +80,7 @@ export const getAllEvents = async () => {
         u.updatedAt AS userUpdatedAt, 
         u.createdAt AS userCreatedAt, 
         u.progressionStatus, 
+        u.unsubscribed,
         u.membershipDate 
       FROM events e 
       LEFT JOIN users u ON e.id = u.event_id;
@@ -100,7 +102,7 @@ export const getAllEvents = async () => {
           channel: row.channel,
           startDate: row.startDate,
           endDate: row.endDate,
-          workspace:row.workspace,
+          workspace: row.workspace,
           users: [] 
         };
       }
@@ -116,6 +118,7 @@ export const getAllEvents = async () => {
           updatedAt: row.userUpdatedAt,
           createdAt: row.userCreatedAt,
           progressionStatus: row.progressionStatus,
+          unsubscribed: row.unsubscribed,
           membershipDate: row.membershipDate
         });
       }
@@ -127,14 +130,14 @@ export const getAllEvents = async () => {
   }
 };
 
-export const saveEventAndUser = async (eventData, users, eventId) => {
+const saveEventAndUser = async (eventData, users, eventId) => {
   const db = await getDbConnection();
 
   try {
     const eventQuery = `
-    INSERT OR REPLACE INTO events (id, name, description, createdAt, updatedAt, url, type, channel,workspace, startDate, endDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?)
-  `;
+      INSERT OR REPLACE INTO events (id, name, description, createdAt, updatedAt, url, type, channel, workspace, startDate, endDate)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
     const eventValues = [
       eventData.id ?? 0,
@@ -150,21 +153,21 @@ export const saveEventAndUser = async (eventData, users, eventId) => {
       eventData.endDate ?? ''
     ];
 
-    console.log(" query --- " + eventQuery + "   data  " + eventValues, eventId)
+    console.log(" query --- " + eventQuery + "   data  " + eventValues, eventId);
     await db.runAsync(eventQuery, eventValues);
+
     const numItems = users.length;
+    const placeholders = Array(numItems).fill("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)").join(", ");
 
-const placeholders = Array(numItems).fill("(?, ?, ?, ?, ?, ?,?,?, ?, ?, ?)").join(", ");
-
-const bulkInsertQuery = `
-  INSERT OR REPLACE INTO users (event_id, user_id, firstName, lastName, email,company,phone, updatedAt, createdAt, progressionStatus, membershipDate)
-  VALUES ${placeholders};
-`;
+    const bulkInsertQuery = `
+      INSERT OR REPLACE INTO users (event_id, user_id, firstName, lastName, email, company, phone, updatedAt, createdAt, progressionStatus,unsubscribed, membershipDate)
+      VALUES ${placeholders};
+    `;
     const userValues = [];
     for (const userData of users) {
       userValues.push(
         eventData.id ?? 0,
-        userData.user_id ?? 0,
+        userData.id ?? 0,
         userData.firstName ?? '',
         userData.lastName ?? '',
         userData.email ?? '',
@@ -173,12 +176,12 @@ const bulkInsertQuery = `
         userData.updatedAt ?? '',
         userData.createdAt ?? '',
         userData.membership.progressionStatus ?? '',
+        userData.unsubscribed??'',
         userData.membership.membershipDate ?? ''
       );
     }
     console.log("Query --- " + bulkInsertQuery + " Data: ", userValues);
     await db.runAsync(bulkInsertQuery, userValues);
-
 
     console.log('Event and user data saved successfully');
   } catch (error) {
@@ -186,7 +189,35 @@ const bulkInsertQuery = `
     throw error;
   }
 };
-export const deleteAllData = async () => {
+const updateUser = async (userData) => {
+  const db = await getDbConnection();
+  
+  try {
+      const query = `
+        UPDATE users
+        SET firstName = ?, lastName = ?, email = ?, company = ?, phone = ?, unsubscribed = ?, progressionStatus = ?
+        WHERE user_id = ?
+      `;
+      const values = [
+        userData.firstName ?? '',
+        userData.lastName ?? '',
+        userData.email ?? '',
+        userData.company ?? '',
+        userData.phone ?? '',
+        userData.unsubscribed ?? 0,
+        userData.progressionStatus ?? '',
+        userData.user_id
+      ];
+
+      await db.runAsync(query, values);
+      console.log('User data updated successfully');
+  } catch (error) {
+    console.error('Failed to update user data', error);
+    throw error;
+  }
+};
+
+const deleteAllData = async () => {
   const db = await getDbConnection();
   try {
     await db.runAsync('DELETE FROM events');
@@ -199,7 +230,8 @@ export const deleteAllData = async () => {
     throw error;
   }
 };
-export const executeQuery = async (query) => {
+
+const executeQuery = async (query) => {
   const db = await getDbConnection();
   try {
     const [results] = await db.execAsync(query);
@@ -215,5 +247,6 @@ export default {
   executeQuery,
   getAllEvents,
   saveEventAndUser,
-  deleteAllData
+  deleteAllData,
+  updateUser
 };
