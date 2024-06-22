@@ -14,15 +14,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.whizzarc.eventhive"
-
     },
     "owner": "poojadassani",
-    
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/app_splash.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.whizzarc.eventhive"
     },
     "web": {
       "favicon": "./assets/app_splash.png"
@@ -32,7 +31,6 @@
         "projectId": "a30931da-68d3-47a4-9a43-a4a3bdfe5d1e"
       }
     },
-    "owner": "poojadassani",
     "runtimeVersion": {
       "policy": "appVersion"
     },
