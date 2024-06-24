@@ -10,11 +10,12 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { fetchEventAndUsersData } from '../utils/eventApi'; // Adjust the path according to your file structure
-import StorageHelper from '../utils/storageHelper'; // Adjust the path to your storageHelper.js file
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { useNavigation } from '@react-navigation/native';
-import mydb from '../database/mydb';
+import mydb from '../database/mydb'; // Adjust path to your local database utility
 
 const Events: React.FC = () => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
@@ -24,45 +25,59 @@ const Events: React.FC = () => {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [isConnected, setIsConnected] = useState(true); // Track internet connection
   const navigation = useNavigation();
 
   useEffect(() => {
-    const checkToken = async () => {
+    const checkTokenAndEvents = async () => {
       setLoading(true);
-      const storedToken = await StorageHelper.getItem('token');
-      if (storedToken) {
-        setToken(storedToken);
-        setIsButtonDisabled(true);
+      try {
+        const storedToken = await AsyncStorage.getItem('token');
+        if (storedToken) {
+          setToken(storedToken);
+          setIsButtonDisabled(true);
+        }
+        await fetchEvents();
+      } catch (error) {
+        console.error('Failed to load token or events', error);
+        Alert.alert('Error', 'Failed to load data. Check your storage and internet connection.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-      fetchEvents();
     };
-    checkToken();
+
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+
+    checkTokenAndEvents();
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleAddEvent = async () => {
     if (!eventName) {
-      alert('Event name cannot be empty');
+      Alert.alert('Error', 'Event name cannot be empty');
       return;
     }
 
     try {
       setLoading(true);
       setMessage('Adding event...');
-      const eventData = await fetchEventAndUsersData(eventName, token);
-      console.log('eventData', eventData);
-
+      const eventData = await saveEventToDatabase(eventName);
       if (!eventData) {
-        alert('No event data found');
+        Alert.alert('Error', 'Failed to add event');
         return;
       }
       setEventName('');
       setIsAddingEvent(false);
-      fetchEvents();
+      await fetchEvents();
       setMessage('Event added successfully');
     } catch (error) {
       console.error('Failed to add event', error);
-      alert('Failed to add event');
+      Alert.alert('Error', 'Failed to add event');
     } finally {
       setLoading(false);
     }
@@ -70,19 +85,23 @@ const Events: React.FC = () => {
 
   const fetchEvents = async () => {
     try {
+      if (!isConnected) {
+        throw new Error('No internet connection');
+      }
+
       setLoading(true);
       setMessage('Loading Events');
-      const results = Array.from(await mydb.getAllEvents());
-
-      console.log('Fetched events:', results);
+      const results = await mydb.getAllEvents(); // Replace with your database fetch logic
 
       if (results && results.length > 0) {
         setEvents(results);
       } else {
         console.log('No events found in the database');
+        Alert.alert('Info', 'No events found');
       }
     } catch (error) {
       console.error('Failed to fetch events', error);
+      Alert.alert('Error', 'Failed to fetch events');
     } finally {
       setLoading(false);
     }
@@ -90,6 +109,17 @@ const Events: React.FC = () => {
 
   const handleEventPress = (event: any) => {
     navigation.navigate('EventUsers', { eventData: event });
+  };
+
+  const saveEventToDatabase = async (eventName: string) => {
+    try {
+      // Simulating saving to local database
+      await mydb.saveEvent({ name: eventName, startDate: new Date().toISOString(), users: [] });
+      return true;
+    } catch (error) {
+      console.error('Failed to save event to database', error);
+      return false;
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -102,7 +132,12 @@ const Events: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.sidebar}>
         <Text style={styles.sidebarTitle}>Events</Text>
-        {events.length === 0 ? (
+        {!isConnected ? (
+          <View style={styles.noEventsContainer}>
+            <Text style={styles.noEventsText}>No internet connection</Text>
+            <Text style={styles.noEventsSubtext}>Please check your connection and try again</Text>
+          </View>
+        ) : events.length === 0 ? (
           <View style={styles.noEventsContainer}>
             <Text style={styles.noEventsText}>No scheduled events at the moment</Text>
             <Text style={styles.noEventsSubtext}>It takes 1 minute to connect to your Marketo event.</Text>
@@ -282,16 +317,42 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  videoSubtext: {
-    fontSize: 14,
-    color: '#1E88E5',
-  },
   addEventContainer: {
-    justifyContent: 'center',
-    width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginTop: -200,
-    padding: 20,
+    alignItems: 'center',
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  eventIdHeading: {
+    fontSize: 18,
+    marginBottom: 10,
+  },
+  input: {
+    width: '80%',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  addEventButton: {
+    backgroundColor: '#FFCC80',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginBottom: 20,
+  },
+  troubleshootingText: {
+    fontSize: 16,
+    color: '#757575',
+    marginBottom: 10,
+  },
+  troubleshootingText2: {
+    fontSize: 16,
+    color: '#757575',
+    marginBottom: 20,
   },
   modalContainer: {
     flex: 1,
@@ -300,58 +361,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   loadingDialog: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
   },
   loadingMessage: {
+    fontSize: 18,
     marginTop: 10,
-    fontSize: 16,
-    color: '#333333',
   },
-    addEventButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      backgroundColor: '#FFCC80',
-      borderRadius: 5,
-      alignSelf: 'center',
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    heading: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-    },
-    eventIdHeading: {
-      alignSelf: 'flex-start',
-      padding: 5,
-    },
-    input: {
-      width: '100%',
-      height: 40,
-      borderColor: '#666666',
-      borderWidth: 1,
-      borderRadius: 5,
-      paddingHorizontal: 10,
-      marginBottom: 10,
-    },
-    troubleshootingText: {
-      marginTop: 20,
-      fontWeight: 'bold',
-      fontSize: 18,
-      color: 'green',
-    },
-    troubleshootingText2: {
-      marginTop: 5,
-      color: 'blue',
-    },
-  });
-  
-  export default Events;
-  
+});
+
+export default Events;
