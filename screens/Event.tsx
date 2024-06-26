@@ -281,8 +281,8 @@ const styles = StyleSheet.create({
     marginTop: -200,
   },
   videoThumbnail: {
-    width: 300,
-    height: 200,
+    width: 150,
+    height: 150,
     marginBottom: 10,
     borderRadius:10
   },
