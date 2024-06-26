@@ -54,6 +54,7 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
       setMessage('Connection failed');
     } finally {
       setShowLoadingDialog(false);
+      checkToken()
     }
   };
 
