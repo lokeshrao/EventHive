@@ -35,15 +35,18 @@ const Events: React.FC = () => {
     setLoading(false);
   };
 
-  useCallback(() => {
-    fetchEvents();
-  }, []);
+  useEffect(()=>{
+    checkToken();
+  },[])
+  // useCallback(() => {
+  //   fetchEvents();
+  // }, []);
   
-  useFocusEffect(
-    useCallback(() => {
-      checkToken();
-    }, [])
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     checkToken();
+  //   }, [])
+  // );
 
   const handleAddEvent = async () => {
     if (!eventName) {
