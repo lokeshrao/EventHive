@@ -23,7 +23,6 @@ const EventsStack = () => (
 
 const TabNavigator = () => {
   const [checkingToken, setCheckingToken] = useState(true);
-  const [validToken, setValidToken] = useState(false);
   const [initialRoute, setInitialRoute] = useState('Setting'); // Default initial route is 'Setting'
   const navigation = useNavigation();
 
@@ -34,7 +33,6 @@ const TabNavigator = () => {
   const shouldNavigate = async () => {
     try {
       const tokenValid = await StorageHelper.isTokenValid();
-      setValidToken(tokenValid);
       setInitialRoute(tokenValid ? 'Events' : 'Setting');
       if (!tokenValid) {
         Alert.alert('Session is expired, please log in again', '', [
@@ -53,8 +51,9 @@ const TabNavigator = () => {
   };
 
   const handleTabPress = async (routeName: string) => {
-    console.log(routeName + validToken)
-    if (routeName === 'Events' && !validToken) {
+    const tokenValid = await StorageHelper.isTokenValid();
+    console.log(routeName +"  IsToken Valid :  "+ tokenValid)
+    if (routeName === 'Events' && !tokenValid) {
       Alert.alert('Session is expired, please log in again', '', [
         {
           text: 'OK',
@@ -79,7 +78,7 @@ const TabNavigator = () => {
     <Tab.Navigator
       initialRouteName={initialRoute}
       screenOptions={{
-        tabBarActiveTintColor: '#80CBC4',
+        tabBarActiveTintColor: '#5cbcb3',
         tabBarInactiveTintColor: '#666666',
         tabBarLabelStyle: { fontSize: 12 },
         tabBarStyle: { display: 'flex' },
@@ -92,7 +91,7 @@ const TabNavigator = () => {
           tabBarLabel: 'Setting',
           headerShown: false,
           tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name="settings" color={focused ? color : '#666666'} size={size} />
+            <Ionicons name="settings" color={focused ? color : '#5cbcb3'} size={size} />
           ),
         }}
         listeners={{ tabPress: () => handleTabPress('Setting') }}
@@ -104,7 +103,7 @@ const TabNavigator = () => {
           tabBarLabel: 'Events',
           headerShown: false,
           tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name="file-tray" color={focused ? color : '#666666'} size={size} />
+            <Ionicons name="file-tray" color={focused ? color : '#5cbcb3'} size={size} />
           ),
         }}
         listeners={{ tabPress: () => handleTabPress('Events') }}
@@ -116,7 +115,7 @@ const TabNavigator = () => {
           tabBarLabel: 'Screen 3',
           headerShown: false,
           tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name="log-out" color={focused ? color : '#666666'} size={size} />
+            <Ionicons name="log-out" color={focused ? color : '#5cbcb3'} size={size} />
           ),
         }}
         listeners={{ tabPress: () => handleTabPress('Screen3') }}

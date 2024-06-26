@@ -15,6 +15,8 @@ import { createOrUpdateUser } from '../utils/addEditUserApi';
 import StorageHelper from '../utils/storageHelper';
 import { changeUserStatus } from '../utils/mapToEvent';
 import mydb from '../database/mydb';
+import { Ionicons } from '@expo/vector-icons';
+
 
 interface Props {
   route: {
@@ -254,14 +256,13 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.leftPanel}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.eventName}>{eventData.name}</Text>
-        </TouchableOpacity>
-
-        {/* Search Input */}
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.button}>
+      <Ionicons name="arrow-back-sharp" size={20} color="#000" style={styles.icon} />
+      <Text style={styles.eventName}>{eventData.name}</Text>
+    </TouchableOpacity>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search users..."
+          placeholder="Search user"
           value={searchQuery}
           onChangeText={handleSearch}
         />
@@ -413,13 +414,25 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   rightPanel: {
-    flex: 2,
+    flex: 1.7,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingEnd: 10,
+    paddingVertical:10,
+    borderRadius: 5,
+  },
+  icon: {
+    marginRight: 10,
+    color:'white',
+    marginBottom: 20,
+  },
   eventName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 20,
@@ -473,15 +486,16 @@ const styles = StyleSheet.create({
   },
 
   userDetailsContainer: {
-    padding: 10,
-    backgroundColor: '#ffffff',
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
     borderRadius: 10,
+    marginTop:-200,
     width: '100%',
   },
   userDetailsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: 'center',
   },
   userDetailRow: {
@@ -491,7 +505,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: 'bold',
-    width: 120, // Adjust as necessary
+    width: 130, 
   },
   value: {
     flex: 1,
@@ -554,17 +568,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Search Input
   searchInput: {
     height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
+    borderColor: '#ccc',
+    borderWidth: 0,
     paddingHorizontal: 10,
     marginBottom: 10,
-    backgroundColor: '#fff',
+    borderRadius:10,
+    backgroundColor: '#dbf0ee',
   },
   sectionHeader: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#5cbcb3',
+    borderTopLeftRadius:10,
+    borderTopRightRadius:10,
     paddingVertical: 8,
     paddingHorizontal: 20,
     fontWeight: 'bold',

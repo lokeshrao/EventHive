@@ -1,8 +1,10 @@
 // Inside Setting component (./screens/Setting.js)
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { getToken } from '../utils/authApi';
 import StorageHelper from '../utils/storageHelper';
+import videoThumbnail from '../assets/4163020.jpg';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface SettingProps {
   onTokenUpdate: () => void; // Define onTokenUpdate prop as a function that returns void
@@ -16,6 +18,19 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
   const [message, setMessage] = useState<string>('');
   const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
 
+  const checkToken = async () => {
+    setMessage("Loading")
+    setShowLoadingDialog(true);
+    const storedToken = await StorageHelper.isTokenValid();
+    setIsButtonDisabled(storedToken)
+    setShowLoadingDialog(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      checkToken();
+    }, [])
+  );
   const handleConnect = async () => {
     if (!endPointUrl || !clientId || !clientSecret) {
       setMessage('All fields are required');
@@ -44,7 +59,6 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Modal and other UI components */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -60,11 +74,9 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
       </Modal>
 
       <>
-        <TouchableOpacity onPress={() => { /* Handle back navigation */ }}>
-          <Text style={styles.backButton}>{'<'}</Text>
-        </TouchableOpacity>
-        {/* Your existing UI components */}
-        <Image source={{ uri: 'https://via.placeholder.com/300x200' }} style={styles.videoThumbnail} />
+        <View style={{marginTop:40}}>
+        </View>
+        <Image source={videoThumbnail} style={styles.videoThumbnail} />
         <Text style={styles.title}>How to connect to my Marketo account?</Text>
         <Text style={styles.subtitle}>Watch this step by step tutorial</Text>
         <View style={styles.inputContainer}>
@@ -92,9 +104,15 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
             secureTextEntry
           />
         </View>
-        <TouchableOpacity onPress={handleConnect} style={styles.button} disabled={isButtonDisabled}>
+        <View style={styles.container}>
+      {isButtonDisabled ? (
+        <Text style={styles.connectedText}>Connected</Text>
+      ) : (
+        <TouchableOpacity onPress={handleConnect} style={styles.button}>
           <Text style={styles.buttonText}>Connect to my Marketo</Text>
         </TouchableOpacity>
+      )}
+    </View>
       </>
     </ScrollView>
   );
@@ -112,6 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius:10
   },
   loadingDialog: {
     backgroundColor: '#FFFFFF',
@@ -130,9 +149,10 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   videoThumbnail: {
-    width: '100%',
+    width: '70%',
     height: 200,
     marginBottom: 20,
+    borderRadius:10
   },
   title: {
     fontSize: 24,
@@ -150,13 +170,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 15,
     marginHorizontal: 20,
-    width: '100%',
+    width: '70%',
   },
   inputHeading: {
     marginBottom: 5,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#111',
+    color: '#666666',
   },
   input: {
     width: '100%',
@@ -169,9 +189,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   button: {
-    backgroundColor: '#80CBC4',
+    backgroundColor: '#5cbcb3',
     paddingVertical: 15,
-    paddingHorizontal: 25,
+    paddingHorizontal: 35,
     borderRadius: 5,
     alignItems: 'center',
     width: 'auto',
@@ -187,6 +207,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 10,
+  },
+  connectedText: {
+    fontSize: 16,
+    fontWeight:'bold',
+    color: 'green',
+    backgroundColor:'#dbf0ee',
+    paddingVertical: 15,
+    paddingHorizontal: 35,
+    borderRadius: 5,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,32 +13,37 @@ import {
 } from 'react-native';
 import { fetchEventAndUsersData } from '../utils/eventApi'; // Adjust the path according to your file structure
 import StorageHelper from '../utils/storageHelper'; // Adjust the path to your storageHelper.js file
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import mydb from '../database/mydb';
+import eventImage from '../assets/event.jpg'
 
 const Events: React.FC = () => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [eventName, setEventName] = useState('');
   const [events, setEvents] = useState<any[]>([]); // Adjust type as per your event data structure
   const [token, setToken] = useState<string>('');
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const checkToken = async () => {
-      setLoading(true);
-      const storedToken = await StorageHelper.getItem('token');
-      if (storedToken) {
-        setToken(storedToken);
-        setIsButtonDisabled(true);
-      }
-      setLoading(false);
-      fetchEvents();
-    };
-    checkToken();
-  }, []);
+  const checkToken = async () => {
+    setMessage("Loading")
+    setLoading(true);
+    const storedToken = await StorageHelper.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+    }
+    setLoading(false);
+  };
+
+  useCallback(()=>{
+    fetchEvents();
+  },[])
+  useFocusEffect(
+    useCallback(() => {
+      checkToken();
+    }, [])
+  );
 
   const handleAddEvent = async () => {
     if (!eventName) {
@@ -150,7 +155,7 @@ const Events: React.FC = () => {
         ) : (
           <View style={styles.videoContainer}>
             <Image
-              source={{ uri: 'https://via.placeholder.com/150' }}
+              source={eventImage}
               style={styles.videoThumbnail}
             />
             <Text style={styles.videoTitle}>How to add an event?</Text>
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     flex: 1,
-    backgroundColor: '#80CBC4',
+    backgroundColor: '#5cbcb3',
     paddingHorizontal: 10,
     paddingVertical: 30,
     justifyContent: 'space-between',
@@ -215,7 +220,8 @@ const styles = StyleSheet.create({
   eventItem: {
     marginBottom: 10,
     borderRadius: 5,
-    paddingHorizontal: 25,
+    paddingStart: 10,
+    paddingEnd:10,
     paddingVertical: 10,
     width: '100%',
     position: 'relative',
@@ -233,24 +239,25 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   eventName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     marginBottom: 5,
-    color: '#fff',
+    color: '#edf8f7',
   },
   eventDetails: {
+    marginTop:10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   eventDate: {
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 5,
-    color: '#fff',
+    color: '#edf8f7',
   },
   eventMembers: {
     fontSize: 14,
-    color: '#fff',
+    color: '#edf8f7',
   },
   addButtonContainer: {
     marginBottom: 20,
@@ -259,7 +266,7 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: '#FFCC80',
+    backgroundColor: '#ffb84d',
     borderRadius: 5,
     alignItems: 'center',
   },
@@ -271,11 +278,13 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     alignItems: 'center',
+    marginTop: -200,
   },
   videoThumbnail: {
     width: 300,
     height: 200,
     marginBottom: 10,
+    borderRadius:10
   },
   videoTitle: {
     fontSize: 18,
@@ -289,8 +298,9 @@ const styles = StyleSheet.create({
   addEventContainer: {
     justifyContent: 'center',
     width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'rgba(0, 0, 0, 0.02)',
     marginTop: -200,
+    borderRadius:10,
     padding: 20,
   },
   modalContainer: {
@@ -313,7 +323,7 @@ const styles = StyleSheet.create({
     addEventButton: {
       paddingVertical: 10,
       paddingHorizontal: 20,
-      backgroundColor: '#FFCC80',
+      backgroundColor: '#ffb84d',
       borderRadius: 5,
       alignSelf: 'center',
       alignItems: 'center',
@@ -331,25 +341,26 @@ const styles = StyleSheet.create({
     eventIdHeading: {
       alignSelf: 'flex-start',
       padding: 5,
+      color:'gray'
     },
     input: {
       width: '100%',
       height: 40,
-      borderColor: '#666666',
+      borderColor: '#ccc',
       borderWidth: 1,
       borderRadius: 5,
       paddingHorizontal: 10,
       marginBottom: 10,
     },
     troubleshootingText: {
-      marginTop: 20,
+      marginTop: 50,
       fontWeight: 'bold',
-      fontSize: 18,
-      color: 'green',
+      fontSize: 30,
+      color: '#5cbcb3',
     },
     troubleshootingText2: {
       marginTop: 5,
-      color: 'blue',
+      color: 'gray',
     },
   });
   
