@@ -260,15 +260,26 @@ const styles = StyleSheet.create({
     color: '#edf8f7',
   },
   addButtonContainer: {
-    marginBottom: 20,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    zIndex: 1, // Ensure the container is on top
   },
   button: {
+    backgroundColor: '#007BFF',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: '#ffb84d',
     borderRadius: 5,
-    alignItems: 'center',
+    elevation: 2, // For Android shadow
+    shadowColor: '#000', // For iOS shadow
+    shadowOffset: { width: 0, height: 2 }, // For iOS shadow
+    shadowOpacity: 0.8, // For iOS shadow
+    shadowRadius: 2, // For iOS shadow
+    zIndex: 2, // Ensure the button is on top
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
   },
   content: {
     flex: 1.7,
@@ -327,11 +338,6 @@ const styles = StyleSheet.create({
       borderRadius: 5,
       alignSelf: 'center',
       alignItems: 'center',
-    },
-    buttonText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: 'bold',
     },
     heading: {
       fontSize: 24,
