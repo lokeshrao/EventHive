@@ -161,7 +161,7 @@ const Events: React.FC = () => {
         ) : (
           <View style={styles.videoContainer}>
             <Image
-              source={eventImage}
+              source={{ uri: 'https://via.placeholder.com/150' }}
               style={styles.videoThumbnail}
             />
             <Text style={styles.videoTitle}>How to add an event?</Text>
