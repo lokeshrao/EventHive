@@ -19,11 +19,17 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
   const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
 
   const checkToken = async () => {
+    try {
     setMessage("Loading")
     setShowLoadingDialog(true);
     const storedToken = await StorageHelper.isTokenValid();
     setIsButtonDisabled(storedToken)
-    setShowLoadingDialog(false);
+    }
+    catch (error) {
+      console.error('Failed to check token', error);
+    } finally {
+      setShowLoadingDialog(false);
+    }
   };
 
   useFocusEffect(
@@ -53,7 +59,6 @@ const Setting: React.FC<SettingProps> = ({ onTokenUpdate }) => {
       console.error('Failed to connect', error);
       setMessage('Connection failed');
     } finally {
-      setShowLoadingDialog(false);
       checkToken()
     }
   };
