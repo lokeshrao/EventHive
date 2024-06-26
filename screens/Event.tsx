@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     zIndex: 1, // Ensure the container is on top
   },
   button: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#ffb84d',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
