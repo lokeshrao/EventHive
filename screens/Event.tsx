@@ -35,18 +35,15 @@ const Events: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(()=>{
-    checkToken();
-  },[])
-  // useCallback(() => {
-  //   fetchEvents();
-  // }, []);
+  useCallback(() => {
+    fetchEvents();
+  }, []);
   
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     checkToken();
-  //   }, [])
-  // );
+  useFocusEffect(
+    useCallback(() => {
+      checkToken();
+    }, [])
+  );
 
   const handleAddEvent = async () => {
     if (!eventName) {
@@ -164,7 +161,7 @@ const Events: React.FC = () => {
         ) : (
           <View style={styles.videoContainer}>
             <Image
-              source={{ uri: 'https://via.placeholder.com/150' }}
+              source={eventImage}
               style={styles.videoThumbnail}
             />
             <Text style={styles.videoTitle}>How to add an event?</Text>
