@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Text,
   View,
-  Button,
   Image,
   TextInput,
   FlatList,
@@ -15,7 +14,7 @@ import { fetchEventAndUsersData } from '../utils/eventApi'; // Adjust the path a
 import StorageHelper from '../utils/storageHelper'; // Adjust the path to your storageHelper.js file
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import mydb from '../database/mydb';
-import eventImage from '../assets/event.jpg'
+import eventImage from '../assets/event.jpg';
 
 const Events: React.FC = () => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
@@ -27,7 +26,7 @@ const Events: React.FC = () => {
   const navigation = useNavigation();
 
   const checkToken = async () => {
-    setMessage("Loading")
+    setMessage("Loading");
     setLoading(true);
     const storedToken = await StorageHelper.getItem('token');
     if (storedToken) {
@@ -36,9 +35,10 @@ const Events: React.FC = () => {
     setLoading(false);
   };
 
-  useCallback(()=>{
+  useCallback(() => {
     fetchEvents();
-  },[])
+  }, []);
+  
   useFocusEffect(
     useCallback(() => {
       checkToken();
@@ -131,7 +131,13 @@ const Events: React.FC = () => {
           />
         )}
         <View style={styles.addButtonContainer}>
-          <TouchableOpacity style={styles.button} onPress={() => setIsAddingEvent(true)}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              console.log('Add event button pressed');
+              setIsAddingEvent(true);
+            }}
+          >
             <Text style={styles.buttonText}>Add event</Text>
           </TouchableOpacity>
         </View>
@@ -146,7 +152,7 @@ const Events: React.FC = () => {
               value={eventName}
               onChangeText={setEventName}
             />
-            <TouchableOpacity style={styles.addEventButton} onPress={() => handleAddEvent()}>
+            <TouchableOpacity style={styles.addEventButton} onPress={handleAddEvent}>
               <Text style={styles.buttonText}>Add event</Text>
             </TouchableOpacity>
             <Text style={styles.troubleshootingText}>Having trouble?</Text>
@@ -221,7 +227,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
     paddingStart: 10,
-    paddingEnd:10,
+    paddingEnd: 10,
     paddingVertical: 10,
     width: '100%',
     position: 'relative',
@@ -245,7 +251,7 @@ const styles = StyleSheet.create({
     color: '#edf8f7',
   },
   eventDetails: {
-    marginTop:10,
+    marginTop: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -295,7 +301,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     marginBottom: 10,
-    borderRadius:10
+    borderRadius: 10,
   },
   videoTitle: {
     fontSize: 18,
@@ -311,7 +317,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.02)',
     marginTop: -200,
-    borderRadius:10,
+    borderRadius: 10,
     padding: 20,
   },
   modalContainer: {
@@ -331,44 +337,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333333',
   },
-    addEventButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      backgroundColor: '#ffb84d',
-      borderRadius: 5,
-      alignSelf: 'center',
-      alignItems: 'center',
-    },
-    heading: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 20,
-    },
-    eventIdHeading: {
-      alignSelf: 'flex-start',
-      padding: 5,
-      color:'gray'
-    },
-    input: {
-      width: '100%',
-      height: 40,
-      borderColor: '#ccc',
-      borderWidth: 1,
-      borderRadius: 5,
-      paddingHorizontal: 10,
-      marginBottom: 10,
-    },
-    troubleshootingText: {
-      marginTop: 50,
-      fontWeight: 'bold',
-      fontSize: 30,
-      color: '#5cbcb3',
-    },
-    troubleshootingText2: {
-      marginTop: 5,
-      color: 'gray',
-    },
-  });
-  
-  export default Events;
-  
+  addEventButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#ffb84d',
+    borderRadius: 5,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  eventIdHeading: {
+    alignSelf: 'flex-start',
+    padding: 5,
+    color: 'gray',
+  },
+  input: {
+    width: '100%',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  troubleshootingText: {
+    marginTop: 50,
+    fontWeight: 'bold',
+    fontSize: 30,
+    color: '#5cbcb3',
+  },
+  troubleshootingText2: {
+    marginTop: 5,
+    color: 'gray',
+  },
+});
+
+export default Events;
