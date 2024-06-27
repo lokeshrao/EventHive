@@ -4,20 +4,19 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
-import Event from './screens/Event';
 import Setting from './screens/Setting';
 import DatabaseExporter from './screens/DBExport';
-import EventUsers from './screens/EventUsers';
 import StorageHelper from './utils/storageHelper';
+import EventDetails from './screens/EventDetails';
+import AllEvents from './screens/AllEvents';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const EventsStack = () => (
-  <Stack.Navigator initialRouteName="Events" screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="AllEvents" component={Event} />
-    <Stack.Screen name="EventUsers" component={EventUsers} />
+  <Stack.Navigator initialRouteName="AllEvents" screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="AllEvents" component={AllEvents} />
+    <Stack.Screen name="EventDetails" component={EventDetails} />
   </Stack.Navigator>
 );
 

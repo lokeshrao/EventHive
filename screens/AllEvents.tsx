@@ -16,34 +16,54 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import mydb from '../database/mydb';
 import eventImage from '../assets/event.jpg';
 
-const Events: React.FC = () => {
+const AllEvents: React.FC<any> = ({ navigation }) => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [eventName, setEventName] = useState('');
   const [events, setEvents] = useState<any[]>([]); // Adjust type as per your event data structure
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const navigation = useNavigation();
-
-  const checkToken = async () => {
-    setMessage("Loading");
+const checkToken = async () => {
+    setMessage('Loading');
     setLoading(true);
     const storedToken = await StorageHelper.getItem('token');
     if (storedToken) {
       setToken(storedToken);
     }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      setMessage('Loading Events');
+      const results = Array.from(await mydb.getAllEvents());
+
+      console.log('Fetched events:', results);
+
+      if (results && results.length > 0) {
+        setEvents(results);
+      } else {
+        console.log('No events found in the database');
+      }
+    } catch (error) {
+      console.error('Failed to fetch events', error);
+    }
     setLoading(false);
   };
 
-  useCallback(() => {
-    fetchEvents();
-  }, []);
-  
   useFocusEffect(
     useCallback(() => {
-      checkToken();
+      const loadData = async () => {
+        setLoading(true);
+        setTimeout(async () => {
+          await checkToken();
+          await fetchEvents();
+          setLoading(false);
+        }, 100); // 1000 milliseconds delay
+      };
+      loadData();
     }, [])
   );
+
 
   const handleAddEvent = async () => {
     if (!eventName) {
@@ -73,28 +93,10 @@ const Events: React.FC = () => {
     }
   };
 
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
-      setMessage('Loading Events');
-      const results = Array.from(await mydb.getAllEvents());
-
-      console.log('Fetched events:', results);
-
-      if (results && results.length > 0) {
-        setEvents(results);
-      } else {
-        console.log('No events found in the database');
-      }
-    } catch (error) {
-      console.error('Failed to fetch events', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEventPress = (event: any) => {
-    navigation.navigate('EventUsers', { eventData: event });
+    console.log("Clicked Event " + { event })
+    setLoading(false)
+    navigation.navigate('EventDetails', { eventData: event });
   };
 
   const formatDate = (dateString: string) => {
@@ -376,4 +378,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Events;
+export default AllEvents;
