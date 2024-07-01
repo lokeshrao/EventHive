@@ -58,19 +58,21 @@ const checkToken = async () => {
           await checkToken();
           await fetchEvents();
           setLoading(false);
-        }, 100); // 1000 milliseconds delay
+        }, 100);
       };
       loadData();
     }, [])
   );
-
 
   const handleAddEvent = async () => {
     if (!eventName) {
       alert('Event name cannot be empty');
       return;
     }
-
+    if (events.some(event => event.id == eventName)) {
+      alert('Event is already added');
+      return;
+    }
     try {
       setLoading(true);
       setMessage('Adding event...');

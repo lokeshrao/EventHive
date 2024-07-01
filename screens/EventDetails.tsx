@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +15,7 @@ import StorageHelper from '../utils/storageHelper';
 import { changeUserStatus } from '../utils/mapToEvent';
 import mydb from '../database/mydb';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
 
 
 interface Props {
@@ -54,21 +54,11 @@ interface User {
 
 const EventDetails: React.FC<Props> = ({ route, navigation }) => {
   const { eventData } = route.params;
-  const users: User[] = eventData.users;
+  const [users, setUsers] = useState<User[]>(eventData.users || []);
   const [token, setToken] = useState<string>('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [newUser, setNewUser] = useState<User>({
-    user_id: 0,
-    firstName: '',
-    lastName: '',
-    company: '',
-    email: '',
-    phone: '',
-    unsubscribed: 0,
-    progressionStatus: ""
-  });
+  const [newUser, setNewUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('Loading...');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -91,19 +81,14 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    // Initial load or when users change
     setFilteredUsers(users);
   }, [users]);
 
-  const toggleModal = () => {
-    setIsModalVisible(!isModalVisible);
-  };
-
-  const handleAddUser = async () => {
+  const onSaveuser = async () => {
     try {
       setIsLoading(true);
       setLoadingMessage(isEditing ? 'Updating User...' : 'Adding User...');
-      if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.phone) {
+      if (!newUser.firstName || !newUser.lastName || !newUser.email) {
         alert('Please fill in all required fields.');
         return;
       }
@@ -115,36 +100,18 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
       }
       const response = await createOrUpdateUser(newUser, token, eventData.workspace);
       console.log(response);
-      if (response && response.success) {
-        if (isEditing && selectedUser) {
-          const updatedUsers = users.map(user => user.user_id === selectedUser.user_id ? newUser : user);
+      if (response && response.success === true) {
+        if (isEditing && newUser) {
+          const updatedUsers = users.map(user => user.user_id === newUser.user_id ? newUser : user);
           setFilteredUsers(updatedUsers);
-          setSelectedUser(newUser);
           mydb.updateUser(newUser);
           console.log("Updated Users:", updatedUsers);
         } else {
-          const id = response.result[0]?.id;
-          if (id) {
-            console.log("userId", id);
-            const isSuccess = await changeUserStatus(id, eventData.id, "Registered", token);
-            if (isSuccess) {
-              setFilteredUsers([...filteredUsers, newUser]);
-            }
-          }
+          await handleAddUserResponse(response)
         }
-
-        setNewUser({
-          user_id: 0,
-          firstName: '',
-          lastName: '',
-          company: '',
-          email: '',
-          phone: '',
-          unsubscribed: 0,
-          progressionStatus: "Registered"
-        });
         setIsEditing(false);
-        toggleModal();
+        setIsAdding(false)
+        setNewUser(null)
       } else {
         console.log("Error", "Failed to add or update the user. Please try again.");
       }
@@ -156,17 +123,40 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  const handleAddUserResponse = async (response) => {
+    try {
+      const id = response.result[0]?.id;
+      const status = response.result[0]?.status;
+
+      if (id && status) {
+        console.log("userId", id);
+        const updatedUser = { ...newUser, user_id: id };
+        const saveToDBSuccess = await mydb.createUser(updatedUser, eventData.id);
+        if (!saveToDBSuccess) {
+          throw new Error("Failed to save user to the database.");
+        }
+
+        setFilteredUsers([...filteredUsers, updatedUser]);
+        setUsers(prevUsers => [...prevUsers, updatedUser]);
+
+      } else {
+        throw new Error("No ID found in the response.");
+      }
+    } catch (error) {
+      console.error("Error processing user:", error);
+    }
+  }
   const handleCheckInOut = async () => {
     try {
       setIsLoading(true);
       setLoadingMessage('Checking In User...');
 
-      if (selectedUser) {
-        console.log("Selected User: ", selectedUser);
-        const response = await changeUserStatus(selectedUser.user_id, eventData.id, "Attended", token);
+      if (newUser) {
+        console.log("Selected User: ", newUser);
+        const response = await changeUserStatus(newUser.user_id, eventData.id, "Attended", token);
         console.log("Change User Status Response: ", response);
         if (response == true) {
-          setSelectedUser({ ...selectedUser, progressionStatus: "Attended" });
+          setNewUser({ ...newUser, progressionStatus: "Attended" });
         }
       } else {
         console.log("No selected user.");
@@ -179,6 +169,13 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleEditUser = (user: User) => {
+    setIsEditing(true);
+    setIsAdding(false)
+  };
+  const onUserClicked = (user) => {
+    console.log("user clicked  : ", user.firstName + user.lastName + " pState ", user.progressionStatus)
+    setIsEditing(false)
+    setIsAdding(false)
     setNewUser({
       user_id: user.user_id,
       firstName: user.firstName,
@@ -189,9 +186,8 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
       unsubscribed: user.unsubscribed,
       progressionStatus: user.progressionStatus,
     });
-    setIsEditing(true);
-    toggleModal();
-  };
+
+  }
 
   const addUserClicked = () => {
     setNewUser({
@@ -205,22 +201,15 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
       progressionStatus: "Registered"
     });
     setIsEditing(false);
-    toggleModal();
+    setIsAdding(true)
+  };
+  const handlePhoneChange = (text) => {
+    const phoneNumber = text.replace(/[^0-9]/g, '').slice(0, 10);
+    setNewUser({ ...newUser, phone: phoneNumber });
   };
 
-  const renderUserItem = ({ item }: { item: User }) => (
-    <TouchableOpacity onPress={() => setSelectedUser(item)}>
-      <View style={styles.userItem}>
-        <Text style={{ fontWeight: 'bold', fontSize: 15 }}>{item.firstName} {item.lastName}</Text>
-        <Text style={{ fontSize: 13 }}>{item.company}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // Function to group users alphabetically
   const groupUsersAlphabetically = () => {
     const groupedUsers: { [key: string]: User[] } = {};
-
     filteredUsers.forEach((user) => {
       const firstLetter = user.firstName.charAt(0).toUpperCase();
       if (!groupedUsers[firstLetter]) {
@@ -228,8 +217,6 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
       }
       groupedUsers[firstLetter].push(user);
     });
-
-    // Sort the keys (initial letters) alphabetically
     const sortedKeys = Object.keys(groupedUsers).sort();
 
     return sortedKeys.map((key) => ({
@@ -237,8 +224,6 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
       data: groupedUsers[key],
     }));
   };
-
-  // Function to filter users based on search query
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     if (query.trim().length === 0) {
@@ -252,14 +237,13 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
       setFilteredUsers(filtered);
     }
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.leftPanel}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.button}>
-      <Ionicons name="arrow-back-sharp" size={20} color="#000" style={styles.icon} />
-      <Text style={styles.eventName}>{eventData.name}</Text>
-    </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.button}>
+          <Ionicons name="arrow-back-sharp" size={20} color="#000" style={styles.icon} />
+          <Text style={styles.eventName}>{eventData.name}</Text>
+        </TouchableOpacity>
         <TextInput
           style={styles.searchInput}
           placeholder="Search user"
@@ -267,7 +251,6 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
           onChangeText={handleSearch}
         />
 
-        {/* Grouped User List */}
         <FlatList
           data={groupUsersAlphabetically()}
           keyExtractor={(item, index) => index.toString()}
@@ -275,117 +258,114 @@ const EventDetails: React.FC<Props> = ({ route, navigation }) => {
             <>
               <Text style={styles.sectionHeader}>{item.letter}</Text>
               {item.data.map((user) => (
-                <TouchableOpacity key={user.user_id} onPress={() => setSelectedUser(user)}>
-                  <View style={styles.userItem}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 15 }}>{user.firstName} {user.lastName}</Text>
-                    <Text style={{ fontSize: 13 }}>{user.company}</Text>
+                <TouchableOpacity key={user.user_id} onPress={() => onUserClicked(user)}>
+                  <View style={[styles.userItem, newUser != null && user.user_id === newUser.user_id && { backgroundColor: '#a3dbd6' }]} >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: 15 }}>{user.firstName} {user.lastName}</Text>
+                        <Text style={{ fontSize: 13 }}>{user.company}</Text>
+                      </View>
+                      {user.progressionStatus === 'Attended' && (
+                        <Ionicons name='checkmark' style={styles.itemIconStyle} />
+                      )}
+                    </View>
                   </View>
                 </TouchableOpacity>
               ))}
             </>
           )}
         />
-
         <TouchableOpacity onPress={addUserClicked} style={styles.addButton}>
           <Text style={styles.addButtonText}>Add User</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.rightPanel}>
-        {selectedUser && (
+        {newUser && (
           <View style={styles.userDetailsContainer}>
-            <Text style={styles.userDetailsTitle}>User Details</Text>
+            <View style={styles.userDetailRow}>
+              <Text style={styles.userDetailsTitle}>{isAdding ? "Add Atendee" : isEditing ? 'Edit Atendee' : 'Atendee Details'}</Text>
+              {isEditing || isAdding ? null : (
+                <Ionicons style={styles.editIconStyle} name="pencil" onPress={() => handleEditUser(newUser)}></Ionicons>
+              )}
+            </View>
             <View style={styles.userDetailRow}>
               <Text style={styles.label}>First Name:</Text>
-              <Text style={styles.value}>{selectedUser.firstName}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && !isAdding && styles.disabledInput]}
+                placeholder="First Name"
+                value={newUser.firstName}
+                editable={isEditing || isAdding}
+                onChangeText={(text) => setNewUser({ ...newUser, firstName: text })}
+              />
             </View>
             <View style={styles.userDetailRow}>
               <Text style={styles.label}>Last Name:</Text>
-              <Text style={styles.value}>{selectedUser.lastName}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && !isAdding && styles.disabledInput]}
+                placeholder="Last Name"
+                value={newUser.lastName}
+                editable={isEditing || isAdding}
+                onChangeText={(text) => setNewUser({ ...newUser, lastName: text })}
+              />
             </View>
             <View style={styles.userDetailRow}>
               <Text style={styles.label}>Email:</Text>
-              <Text style={styles.value}>{selectedUser.email}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && !isAdding && styles.disabledInput]}
+                placeholder="Email"
+                value={newUser.email}
+                editable={isEditing || isAdding}
+                onChangeText={(text) => setNewUser({ ...newUser, email: text })}
+              />
             </View>
             <View style={styles.userDetailRow}>
               <Text style={styles.label}>Company:</Text>
-              <Text style={styles.value}>{selectedUser.company}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && !isAdding && styles.disabledInput]}
+                placeholder="Organization"
+                value={newUser.company}
+                editable={isEditing || isAdding}
+                onChangeText={(text) => setNewUser({ ...newUser, company: text })}
+              />
             </View>
             <View style={styles.userDetailRow}>
               <Text style={styles.label}>Phone:</Text>
-              <Text style={styles.value}>{selectedUser.phone}</Text>
-            </View>
-            <View style={styles.userDetailRow}>
-              <Text style={styles.label}>Marketing Opted In:</Text>
-              <Switch
-                value={selectedUser.unsubscribed === 0} // Inverted logic because 'unsubscribed' seems to represent opt-in status
-                disabled={true}
+              <TextInput
+                style={[styles.input, !isEditing && !isAdding && styles.disabledInput]}
+                placeholder="Phone"
+                value={newUser.phone}
+                onChangeText={handlePhoneChange}
+                maxLength={10}
+                editable={isEditing || isAdding}
+                keyboardType="numeric"
               />
             </View>
-            <TouchableOpacity onPress={() => handleEditUser(selectedUser)} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit User</Text>
-            </TouchableOpacity>
-            {selectedUser.progressionStatus !== 'Attended' ? (
-              <TouchableOpacity onPress={handleCheckInOut} style={styles.checkInOutButton}>
-                <Text style={styles.checkInOutButtonText}>Check In</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.checkedInMessage}>Checked In</Text>
-            )}
-          </View>
-        )}
-      </View>
-
-      <Modal visible={isModalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{isEditing ? 'Edit User' : 'Add New User'}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="First Name"
-              value={newUser.firstName}
-              onChangeText={(text) => setNewUser({ ...newUser, firstName: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Last Name"
-              value={newUser.lastName}
-              onChangeText={(text) => setNewUser({ ...newUser, lastName: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Organization"
-              value={newUser.company}
-              onChangeText={(text) => setNewUser({ ...newUser, company: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={newUser.email}
-              onChangeText={(text) => setNewUser({ ...newUser, email: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone"
-              value={newUser.phone}
-              onChangeText={(text) => setNewUser({ ...newUser, phone: text })}
-            />
             <View style={styles.switchContainer}>
               <Text>Marketing Opted In</Text>
               <Switch
-                value={newUser.unsubscribed === 0} // Inverted logic because 'unsubscribed' seems to represent opt-in status
+                value={newUser.unsubscribed === 0}
                 onValueChange={(value) => setNewUser({ ...newUser, unsubscribed: value ? 0 : 1 })}
+                disabled={!isEditing && !isAdding}
               />
             </View>
-            <View style={styles.modalButtonContainer}>
-              <Button title={isEditing ? 'Update User' : 'Add User'} onPress={handleAddUser} />
-              <Button title="Cancel" onPress={toggleModal} />
-            </View>
+            {isEditing || isAdding ? (
+              <TouchableOpacity onPress={() => onSaveuser()} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Save</Text>
+              </TouchableOpacity>
+            ) : (
+              newUser.progressionStatus !== 'Attended' ? (
+                <TouchableOpacity onPress={handleCheckInOut} style={styles.checkInOutButton}>
+                  <Text style={styles.checkInOutButtonText}>Check In</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.checkedInMessage}>Checked In</Text>
+              )
+            )}
           </View>
-        </View>
-      </Modal>
+        )}
 
-      {/* Loader */}
+      </View>
       <Modal
         animationType="fade"
         transparent={true}
@@ -415,7 +395,6 @@ const styles = StyleSheet.create({
   },
   rightPanel: {
     flex: 1.7,
-    justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
@@ -423,12 +402,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingEnd: 10,
-    paddingVertical:10,
+    paddingVertical: 10,
     borderRadius: 5,
+  },
+  disabledInput: {
+    backgroundColor: '#f0f0f0',
   },
   icon: {
     marginRight: 10,
-    color:'white',
+    color: 'white',
     marginBottom: 20,
   },
   eventName: {
@@ -438,10 +420,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   userItem: {
-    backgroundColor: '#B2DFDB',
+    color: 'white',
     padding: 10,
     marginBottom: 10,
     borderRadius: 5,
+    borderBottomColor: 'grey',
+    borderBottomWidth: 0.4
   },
   addButton: {
     backgroundColor: '#ffb84d',
@@ -477,7 +461,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
-    width: '100%',
+    width: '70%',
   },
   modalButtonContainer: {
     flexDirection: 'row',
@@ -486,10 +470,10 @@ const styles = StyleSheet.create({
   },
 
   userDetailsContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
     backgroundColor: 'rgba(0, 0, 0, 0.02)',
     borderRadius: 10,
-    marginTop:-200,
     width: '100%',
   },
   userDetailsTitle: {
@@ -505,7 +489,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: 'bold',
-    width: 130, 
+    width: 130,
   },
   value: {
     flex: 1,
@@ -574,17 +558,29 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     paddingHorizontal: 10,
     marginBottom: 10,
-    borderRadius:10,
+    borderRadius: 10,
     backgroundColor: '#dbf0ee',
   },
   sectionHeader: {
     backgroundColor: '#5cbcb3',
-    borderTopLeftRadius:10,
-    borderTopRightRadius:10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 20,
     fontWeight: 'bold',
   },
+  editIconStyle: {
+    transform: [{ scale: 1.5 }],
+    backgroundColor: "grey",
+    padding: 10,
+    color: 'white',
+    marginStart: 20,
+    borderRadius: 5,
+    height: 35
+  },
+  itemIconStyle: {
+    transform: [{ scale: 1.5 }],
+  }
 });
 
 export default EventDetails;

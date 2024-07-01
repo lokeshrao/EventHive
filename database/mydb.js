@@ -216,6 +216,42 @@ const updateUser = async (userData) => {
     throw error;
   }
 };
+const createUser = async (userData,eventId) => {
+  console.log("creating user " , eventId ," ---- ", JSON.stringify(userData))
+  const db = await getDbConnection();
+  try {
+    const query = `
+    INSERT INTO users 
+      (event_id, user_id, firstName, lastName, email, company, phone, unsubscribed, progressionStatus)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+  `;
+    const values = [
+      eventId ?? '',
+      userData.user_id ?? '',
+      userData.firstName ?? '',
+      userData.lastName ?? '',
+      userData.email ?? '',
+      userData.company ?? '',
+      userData.phone ?? '',
+      userData.unsubscribed ?? 0,
+      userData.progressionStatus ?? ''
+    ];
+
+    const result = await db.runAsync(query, values);
+
+    if (result.changes > 0) {
+      console.log('User data inserted successfully');
+      return true;
+    } else {
+      console.log('No user data inserted');
+      return false;
+    }
+  } catch (error) {
+    console.error('Failed to insert user data', error);
+    return false;
+  }
+};
+
 
 const deleteAllData = async () => {
   const db = await getDbConnection();
@@ -248,5 +284,6 @@ export default {
   getAllEvents,
   saveEventAndUser,
   deleteAllData,
-  updateUser
+  updateUser,
+  createUser
 };
